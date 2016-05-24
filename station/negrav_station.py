@@ -269,7 +269,7 @@ class Station(Thread):
                         r['protocol'] = 'NEGRAV'
                         r['version'] = 'v1.0'
                         r['cmd'] = 'backup_up2date'
-                        r['bkup_version'] = self.hVer
+                        r['bkup-version'] = self.hVer
                         
                         self.log("Enviando version de la backup actual ["+self.hVer+"].")
                         
