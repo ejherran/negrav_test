@@ -54,6 +54,7 @@ class Station(Thread):
         self.nVer = 0
         self.hVer = ''
         self.lastBK = 0
+        self.raiseBk = False
     
     def run(self):
         
@@ -173,8 +174,40 @@ class Station(Thread):
         self.state = 5
     
     def bkProcess(self):
-        self.lastBK = time.time()
-        print("BK")
+        
+        try:
+            r = {}
+            r['protocol'] = 'NEGRAV'
+            r['version'] = 'v1.0'
+            r['cmd'] = 'backup_up2date'
+            r['bkup_ip'] = self.sIp
+            
+            print("\tEnviando ​backup_up2date...")
+            
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(15)
+            s.connect((self.conf['BS_IP'], self.conf['SERVER_PORT']))
+            s.sendall(json.dumps(r).encode('utf8'))
+            
+            print("\tEsperando ​backup_up2date response...")
+            
+            data = s.recv(4096)
+            data = data.decode('utf8')
+            data = json.loads(data)
+            
+            self.nVer = int(time.time()+1.0)
+            self.hVer = data['bkup-version']
+            
+            print("\tData Version Recibida: "+self.hVer)
+            
+            s.close()
+            
+            self.lastBK = time.time()
+        except Exception as e:
+            print("\n\tBase Station Perdida.", e)
+            print("\n\tEntrando en modo Base Station.", e)
+            self.raiseBk = True
+            self.state = 2
     
     def addProcess(self):
         
@@ -196,8 +229,9 @@ class Station(Thread):
         data = data.decode('utf8')
         data = json.loads(data)
         
-        res = self.fijarIp(data['assign_ip'])
-        print("\tFijando IP "+data['assign_ip']+"!.", res[0])
+        self.sIp = data['assign_ip']
+        res = self.fijarIp(self.sIp)
+        print("\tFijando IP "+self.sIp+"!.", res[0])
         
         s.close()
     
@@ -207,11 +241,12 @@ class Station(Thread):
         
     def activarWifi(self, ip):
         
-        res = sp.getstatusoutput("ifconfig "+self.conf['DEV']+" down")
-        print("\tPreparando "+self.conf['DEV']+"!.", res[0])
-        
-        res = sp.getstatusoutput("iwconfig "+self.conf['DEV']+" mode ad-hoc essid \"NEGRAV-"+self.nid+"\" channel "+str(self.conf['CHANNEL']))
-        print("\tCreando red Ad-Hoc NEGRAV-"+self.nid+"!.", res[0])
+        if(not self.raiseBk):
+            res = sp.getstatusoutput("ifconfig "+self.conf['DEV']+" down")
+            print("\tPreparando "+self.conf['DEV']+"!.", res[0])
+            
+            res = sp.getstatusoutput("iwconfig "+self.conf['DEV']+" mode ad-hoc essid \"NEGRAV-"+self.nid+"\" channel "+str(self.conf['CHANNEL']))
+            print("\tCreando red Ad-Hoc NEGRAV-"+self.nid+"!.", res[0])
         
         res = self.fijarIp(ip)
         print("\tFijando IP "+ip+"!.", res[0])
@@ -269,7 +304,7 @@ class Station(Thread):
                         r['protocol'] = 'NEGRAV'
                         r['version'] = 'v1.0'
                         r['cmd'] = 'backup_up2date'
-                        r['bkup_version'] = self.hVer
+                        r['bkup-version'] = self.hVer
                         
                         self.log("Enviando version de la backup actual ["+self.hVer+"].")
                         
