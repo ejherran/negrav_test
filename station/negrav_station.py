@@ -255,10 +255,28 @@ class Station(Thread):
         data = json.loads(data)
         
         self.aBBS = {}
+        self.aSN = {}
+        self.aMN = {}
         
         for bip in data['bkup_list']:
             tag = 'bk'+str(len(self.aBBS)+1)
             self.aBBS[tag] = {'ip': bip}
+        
+        for node in data['nodes']:
+            if(nod['type'] == 'SN'):
+                tag = 'sn'+str(len(self.aSN)+1)
+                self.aSN[tag] = {'ip': node['node_ip']}
+                self.aSN[tag]['type'] = node['type']
+                self.aSN[tag]['GPS'] = node['GPS']
+                self.aSN[tag]['sensor'] = node['sensor']
+            else:
+                tag = 'mn'+str(len(self.aMN)+1)
+                self.aMN[tag] = {'ip': node['node_ip']}
+                self.aMN[tag]['type'] = node['type']
+                self.aMN[tag]['GPS'] = node['GPS']
+                self.aMN[tag]['sensor'] = node['sensor']
+        
+        print(data)
         
         self.nVer = int(time.time()+1)
         self.hVer = data['bkup_version']
@@ -326,11 +344,9 @@ class Station(Thread):
                 if('cmd' in list(data.keys())):
                     
                     if(data['cmd'] == 'add_request'):
-                        tFlag = 'Node'
                         sip = data['source_ip']
                         
                         if(sip in self.BSM):
-                            tFlag = 'bk'
                             self.log("Detectada Backup Base Station.")
                             sip = self.BBS[0]
                             self.BBS = self.BBS[1:]
@@ -344,6 +360,13 @@ class Station(Thread):
                             tag = 'sn'+str(len(self.aSN)+1)
                             self.log("Registrando Nodo Estacionario: "+tag+" IP: "+sip)
                             self.aSN[tag] = {'ip': sip}
+                        elif(sip in self.MNM):
+                            self.log("Detectado Nodo Móvil.")
+                            sip = self.MN[0]
+                            self.MN = self.MN[1:]
+                            tag = 'sn'+str(len(self.aMN)+1)
+                            self.log("Registrando Nodo Móvil: "+tag+" IP: "+sip)
+                            self.aMN[tag] = {'ip': sip}
                         
                         r = {}
                         r['protocol'] = 'NEGRAV'
@@ -355,12 +378,21 @@ class Station(Thread):
                         
                         conn.sendall(json.dumps(r).encode('utf8'))
                         
-                        if(tFlag != 'bk'):
-                            pass
-                        
-                        
                         self.nextVersion()
                         self.log("Actualizando Data Version: "+self.hVer)
+                    
+                    elif(data['cmd'] == 'node_report'):
+                        tag = self.getTag(data['node_ip'])
+                        self.log("Reporte De Nodo ["+tag+":"+data['node_ip']+"]")
+                        if(data['type'] == 'SN'):
+                            self.aSN[tag]['type'] = data['type']
+                            self.aSN[tag]['GPS'] = data['GPS']
+                            self.aSN[tag]['sensor'] = data['sensor']
+                        else:
+                            self.aMN[tag]['type'] = data['type']
+                            self.aMN[tag]['GPS'] = data['GPS']
+                            self.aMN[tag]['sensor'] = data['sensor']
+                        
                     
                     elif(data['cmd'] == 'backup_up2date'):
                         
@@ -391,7 +423,23 @@ class Station(Thread):
                         
                         r['nodes'] = []
                         
-                        # Pendiente...
+                        for k in list(self.aSN.keys()):
+                            node = {}
+                            node['node_ip'] = self.aSN[k]['ip']
+                            node['type'] = self.aSN[k]['type']
+                            node['GPS'] = self.aSN[k]['GPS']
+                            node['sensor'] = self.aSN[k]['sensor']
+                            
+                            r['nodes'].append(node)
+                        
+                        for k in list(self.aMN.keys()):
+                            node = {}
+                            node['node_ip'] = self.aMN[k]['ip']
+                            node['type'] = self.aMN[k]['type']
+                            node['GPS'] = self.aMN[k]['GPS']
+                            node['sensor'] = self.aMN[k]['sensor']
+                            
+                            r['nodes'].append(node)
                         
                         self.log("Enviando datos de la backup actual ["+self.hVer+"].")
                         
@@ -417,6 +465,22 @@ class Station(Thread):
                 self.server.shutdown(socket.SHUT_RDWR)
         except:
             pass
+    
+    def getTag(self, ip):
+        tag = ''
+        
+        for k in list(self.aSN.keys()):
+            if(self.aSN[k]['ip'] == ip):
+                tag = k
+                break
+        
+        if(tag == ''):
+            for k in list(self.aMN.keys()):
+                if(self.aMN[k]['ip'] == ip):
+                    tag = k
+                    break
+        
+        return k
 
 
 def main(args):

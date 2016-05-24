@@ -5,5 +5,20 @@
     "BS_IP": "10.0.0.100",
     "SN_POOL": "10.1.0.1-10.1.10.255",
     "SNM_POOL": "10.1.100.1-10.1.100.100",
-    "NETMASK": "255.252.0.0"
+    "NETMASK": "255.252.0.0",
+    "GPS": ["1.0", "2.1", "2.0"],
+    "sensor": [
+        {
+            "name":"temp",
+            "units": ["ºC", "ºK", "ºF"],
+            "resolution": "0.5ºC",
+            "range":["-50ºC", "70ºC"]
+        },
+        {
+            "name":"accelerometer",
+            "units": ["m/s"],
+            "resolution": "0.3m/s2",
+            "range":["-5m/s2", "5m/s2"]
+        }
+    ]
 }

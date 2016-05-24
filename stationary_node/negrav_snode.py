@@ -39,6 +39,8 @@ class SNode(Thread):
                     self.preparar()
                 elif self.state == 2:
                     self.activar()
+                elif self.state == 3:
+                    self.reporte()
                     self.detener()
         
         print("\t\t> Deteniendo el servicio!.")
@@ -102,6 +104,27 @@ class SNode(Thread):
         self.activarWifi(self.sIp)
         
         self.addProcess()
+        
+        self.state = 3
+    
+    def report(self):
+        
+        r = {}
+        r['protocol'] = 'NEGRAV'
+        r['version'] = 'v1.0'
+        r['cmd'] = 'node_report'
+        r['node_ip'] = self.sIp
+        r['type'] = 'SN'
+        r['GPS'] = self.conf['GPS']
+        r['sensor'] = self.conf['sensor']
+        
+        print("\tEnviando ​node_report...")
+        
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((self.conf['BS_IP'], self.conf['SERVER_PORT']))
+        s.sendall(json.dumps(r).encode('utf8'))
+        
+        s.close()
     
     def addProcess(self):
         
@@ -135,12 +158,11 @@ class SNode(Thread):
     
     def activarWifi(self, ip):
         
-        if(not self.raiseBk):
-            res = sp.getstatusoutput("ifconfig "+self.conf['DEV']+" down")
-            print("\tPreparando "+self.conf['DEV']+"!.", res[0])
-            
-            res = sp.getstatusoutput("iwconfig "+self.conf['DEV']+" mode ad-hoc essid \"NEGRAV-"+self.nid+"\" channel "+str(self.conf['CHANNEL']))
-            print("\tCreando red Ad-Hoc NEGRAV-"+self.nid+"!.", res[0])
+        res = sp.getstatusoutput("ifconfig "+self.conf['DEV']+" down")
+        print("\tPreparando "+self.conf['DEV']+"!.", res[0])
+        
+        res = sp.getstatusoutput("iwconfig "+self.conf['DEV']+" mode ad-hoc essid \"NEGRAV-"+self.nid+"\"")
+        print("\tCreando red Ad-Hoc NEGRAV-"+self.nid+"!.", res[0])
         
         res = self.fijarIp(ip)
         print("\tFijando IP "+ip+"!.", res[0])
