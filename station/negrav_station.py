@@ -195,19 +195,69 @@ class Station(Thread):
             data = data.decode('utf8')
             data = json.loads(data)
             
-            self.nVer = int(time.time()+1.0)
-            self.hVer = data['bkup-version']
+            tmpVer = data['bkup_version']
             
-            print("\tData Version Recibida: "+self.hVer)
-            
+            print("\tData Version Recibida: "+tmpVer)
             s.close()
+            
+            if(tmpVer != self.hVer):
+                self.updateBk()
             
             self.lastBK = time.time()
         except Exception as e:
             print("\n\tBase Station Perdida.", e)
-            print("\n\tEntrando en modo Base Station.", e)
-            self.raiseBk = True
-            self.state = 2
+            
+            lbk = []
+            for k in list(self.aBBS.keys()):
+                lbk.append( self.aBBS[k][ip] )
+            
+            lbk.sort()
+            
+            if(self.sIp == lbk[0]):
+                
+                lbk = lbk[1:]
+                self.aBBS = {}
+        
+                for bip in lbk:
+                    tag = 'bk'+str(len(self.aBBS)+1)
+                    self.aBBS[tag] = {'ip': bip}
+                
+                self.nextVersion()
+                
+                print("\n\tEntrando en modo Base Station.")
+                self.raiseBk = True
+                self.state = 2
+            else:
+                print("\n\tEsperando nueva Base Station.")
+    
+    def updateBk(self):
+        
+        r = {}
+        r['protocol'] = 'NEGRAV'
+        r['version'] = 'v1.0'
+        r['cmd'] = 'backup_update'
+        r['bkup_ip'] = self.sIp
+        
+        print("\tEnviando ​backup_update...")
+        
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(15)
+        s.connect((self.conf['BS_IP'], self.conf['SERVER_PORT']))
+        s.sendall(json.dumps(r).encode('utf8'))
+        
+        print("\tEsperando ​backup_update response...")
+        
+        data = s.recv(4096)
+        data = data.decode('utf8')
+        data = json.loads(data)
+        
+        self.aBBS = {}
+        
+        for bip in data['bkup_list']:
+            tag = 'bk'+str(len(self.aBBS)+1)
+            self.aBBS[tag] = {'ip': bip}
+        
+        s.close()
     
     def addProcess(self):
         
@@ -304,9 +354,31 @@ class Station(Thread):
                         r['protocol'] = 'NEGRAV'
                         r['version'] = 'v1.0'
                         r['cmd'] = 'backup_up2date'
-                        r['bkup-version'] = self.hVer
+                        r['bkup_version'] = self.hVer
                         
                         self.log("Enviando version de la backup actual ["+self.hVer+"].")
+                        
+                        conn.sendall(json.dumps(r).encode('utf8'))
+                    
+                    elif(data['cmd'] == 'backup_update'):
+                        
+                        self.log("Solicitud de actualización de datos en backup.")
+                        r = {}
+                        r['protocol'] = 'NEGRAV'
+                        r['version'] = 'v1.0'
+                        r['cmd'] = 'backup_update'
+                        r['bkup_version'] = self.hVer
+                        
+                        r['bkup_list'] = []
+                        
+                        for k in list(self.aBBS.keys()):
+                            r['bkup_list'].append( self.aBBS[k][ip] )
+                        
+                        r['nodes'] = []
+                        
+                        # Pendiente...
+                        
+                        self.log("Enviando datos de la backup actual ["+self.hVer+"].")
                         
                         conn.sendall(json.dumps(r).encode('utf8'))
                         
