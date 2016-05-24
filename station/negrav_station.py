@@ -53,6 +53,7 @@ class Station(Thread):
         self.aMN = {}
         self.nVer = 0
         self.hVer = ''
+        self.lastBK = 0
     
     def run(self):
         
@@ -71,9 +72,12 @@ class Station(Thread):
                     self.console.start()
                 elif self.state == 3:
                     self.bakup()
-                    self.detener()
                 elif self.state == 4:
                     self.esperar()
+                elif self.state == 5:
+                    
+                    if ((time.time() - self.lastBK) >= self.conf['INTERVAL_BK']):
+                        self.bkProcess()
         
         print("\t\t> Deteniendo el servicio!.")
         print("\n----------------------------------------------------------------\n")
@@ -165,6 +169,12 @@ class Station(Thread):
         self.activarWifi(self.sIp)
         
         self.addProcess()
+        
+        self.state = 5
+    
+    def bkProcess(self):
+        self.lastBK = time.time()
+        print("BK")
     
     def addProcess(self):
         
