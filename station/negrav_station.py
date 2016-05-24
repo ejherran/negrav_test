@@ -71,7 +71,7 @@ class Station(Thread):
                     self.console = Console(self)
                     self.console.start()
                 elif self.state == 3:
-                    self.bakup()
+                    self.backup()
                 elif self.state == 4:
                     self.esperar()
                 elif self.state == 5:
@@ -139,7 +139,7 @@ class Station(Thread):
     
     def baseStation(self):
         
-        print("\n\tGenarando Bakup Base Station Pool...")
+        print("\n\tGenarando Backup Base Station Pool...")
         self.BBS = pool.getPool(self.conf['BBS_POOL'])
         print("\tGenarando Base Station Momentary Pool...")
         self.BSM = pool.getPool(self.conf['BSM_POOL'])
@@ -158,8 +158,8 @@ class Station(Thread):
         self.server.listen(8)
         self.state = 4
     
-    def bakup(self):
-        print("\n\tGenarando Bakup Base Station Pool...")
+    def backup(self):
+        print("\n\tGenarando Backup Base Station Pool...")
         self.BBS = pool.getPool(self.conf['BBS_POOL'])
         print("\tGenarando Base Station Momentary Pool...")
         self.BSM = pool.getPool(self.conf['BSM_POOL'])
@@ -238,11 +238,11 @@ class Station(Thread):
                         
                         if(sip in self.BSM):
                             tFlag = 'bk'
-                            self.log("Detectada Bakup Base Station.")
+                            self.log("Detectada Backup Base Station.")
                             sip = self.BBS[0]
                             self.BBS = self.BBS[1:]
                             tag = 'bk'+str(len(self.aBBS)+1)
-                            self.log("Registrando Bakup Base Station: "+tag+" IP: "+sip)
+                            self.log("Registrando Backup Base Station: "+tag+" IP: "+sip)
                             self.aBBS[tag] = {'ip': sip}
                         
                         r = {}
@@ -258,14 +258,30 @@ class Station(Thread):
                         if(tFlag != 'bk'):
                             pass
                         
-                        conn.close()
+                        
                         self.nextVersion()
                         self.log("Actualizando Data Version: "+self.hVer)
+                    
+                    elif(data['cmd'] == 'backup_up2date'):
+                        
+                        self.log("Solicitud de actualización de backup.")
+                        r = {}
+                        r['protocol'] = 'NEGRAV'
+                        r['version'] = 'v1.0'
+                        r['cmd'] = 'backup_up2date'
+                        r['bkup_version'] = self.hVer
+                        
+                        self.log("Enviando version de la backup actual ["+self.hVer+"].")
+                        
+                        conn.sendall(json.dumps(r).encode('utf8'))
+                        
                 else:
                     self.log("ERROR: Comando no definido en la solicitud!.")
                 
             except Exception as e:
                 self.log("ERROR: Formato de solicitud incorrecta!. "+str(e))
+            
+            conn.close()
             
         except Exception as e:
             self.log("ERROR: Problemas de red!. "+str(e))
