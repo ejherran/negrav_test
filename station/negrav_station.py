@@ -263,7 +263,7 @@ class Station(Thread):
             self.aBBS[tag] = {'ip': bip}
         
         for node in data['nodes']:
-            if(nod['type'] == 'SN'):
+            if(node['type'] == 'SN'):
                 tag = 'sn'+str(len(self.aSN)+1)
                 self.aSN[tag] = {'ip': node['node_ip']}
                 self.aSN[tag]['type'] = node['type']
@@ -275,8 +275,6 @@ class Station(Thread):
                 self.aMN[tag]['type'] = node['type']
                 self.aMN[tag]['GPS'] = node['GPS']
                 self.aMN[tag]['sensor'] = node['sensor']
-        
-        print(data)
         
         self.nVer = int(time.time()+1)
         self.hVer = data['bkup_version']

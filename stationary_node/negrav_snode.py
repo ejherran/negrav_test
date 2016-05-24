@@ -107,7 +107,7 @@ class SNode(Thread):
         
         self.state = 3
     
-    def report(self):
+    def reporte(self):
         
         r = {}
         r['protocol'] = 'NEGRAV'
