@@ -202,8 +202,11 @@ class Station(Thread):
             
             if(tmpVer != self.hVer):
                 self.updateBk()
+            else:
+                print("\tData Version Sin Cambios: "+tmpVer)
             
             self.lastBK = time.time()
+            
         except Exception as e:
             print("\n\tBase Station Perdida.", e)
             
@@ -256,6 +259,11 @@ class Station(Thread):
         for bip in data['bkup_list']:
             tag = 'bk'+str(len(self.aBBS)+1)
             self.aBBS[tag] = {'ip': bip}
+        
+        self.nVer = int(time.time()+1)
+        self.hVer = data['bkup_version']
+        
+        print("\tBackup Data Version Actualizada!.")
         
         s.close()
     
@@ -372,7 +380,7 @@ class Station(Thread):
                         r['bkup_list'] = []
                         
                         for k in list(self.aBBS.keys()):
-                            r['bkup_list'].append( self.aBBS[k][ip] )
+                            r['bkup_list'].append( self.aBBS[k]['ip'] )
                         
                         r['nodes'] = []
                         
