@@ -5,6 +5,7 @@ import sys
 import json
 import socket
 import time
+import hashlib
 import pool
 import subprocess as sp
 from threading import Thread
@@ -47,6 +48,11 @@ class Station(Thread):
         self.SNM = []
         self.MN = []
         self.MNM = []
+        self.aBBS = {}
+        self.aSN = {}
+        self.aMN = {}
+        self.nVer = 0
+        self.hVer = ''
     
     def run(self):
         
@@ -71,6 +77,12 @@ class Station(Thread):
         
         print("\t\t> Deteniendo el servicio!.")
         print("\n----------------------------------------------------------------\n")
+    
+    def nextVersion(self):
+        self.nVer += 1
+        m = hashlib.sha1()
+        m.update(str(self.nVer).encode('utf8'))
+        self.hVer = m.hexdigest().upper()
     
     def log(self, msg):
         f = open("station.log", "a")
@@ -201,9 +213,52 @@ class Station(Thread):
         try:
             conn, addr = self.server.accept()
             data = conn.recv(4096)
-            self.log("MSG: "+data.decode('utf8'))
-        except:
-            pass
+            
+            data = data.decode('utf8')
+            self.log("MSG: "+data)
+            
+            try:
+                data = json.loads(data)
+                
+                if('cmd' in list(data.keys())):
+                    
+                    if(data['cmd'] == 'add_request'):
+                        tFlag = ''
+                        sip = data['source_ip']
+                        
+                        if(sip in self.BSM):
+                            tFlag = 'bk'
+                            self.log("Detectada Bakup Base Station.")
+                            sip = self.BBS[0]
+                            self.BBS = self.BBS[1:]
+                            tag = 'bk'+str(len(self.aBBS)+1)
+                            self.log("Registrando Bakup Base Station: "+tag+" IP: "+sip)
+                            self.aBBS[tag] = {'ip': sip}
+                        
+                        r = {}
+                        r['protocol'] = 'NEGRAV'
+                        r['version'] = 'v1.0'
+                        r['cmd'] = 'add_response'
+                        r['assign_ip'] = sip
+                        
+                        self.log("Enviando add_response!.")
+                        
+                        conn.sendall(json.dumps(r).encode('utf8'))
+                        
+                        if(tFlag != 'bk'):
+                            pass
+                        
+                        conn.close()
+                        self.nextVersion()
+                        self.log("Actualizando Data Version: "+self.hVer)
+                else:
+                    self.log("ERROR: Comando no definido en la solicitud!.")
+                
+            except Exception as e:
+                self.log("ERROR: Formato de solicitud incorrecta!. "+str(e))
+            
+        except Exception as e:
+            self.log("ERROR: Problemas de red!. "+str(e))
     
     def detener(self):
         
