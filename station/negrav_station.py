@@ -212,7 +212,7 @@ class Station(Thread):
             
             lbk = []
             for k in list(self.aBBS.keys()):
-                lbk.append( self.aBBS[k][ip] )
+                lbk.append( self.aBBS[k]['ip'] )
             
             lbk.sort()
             
