@@ -326,7 +326,7 @@ class Station(Thread):
                 if('cmd' in list(data.keys())):
                     
                     if(data['cmd'] == 'add_request'):
-                        tFlag = ''
+                        tFlag = 'Node'
                         sip = data['source_ip']
                         
                         if(sip in self.BSM):
@@ -337,6 +337,13 @@ class Station(Thread):
                             tag = 'bk'+str(len(self.aBBS)+1)
                             self.log("Registrando Backup Base Station: "+tag+" IP: "+sip)
                             self.aBBS[tag] = {'ip': sip}
+                        elif(sip in self.SNM):
+                            self.log("Detectado Nodo Estacionario.")
+                            sip = self.SN[0]
+                            self.SN = self.SN[1:]
+                            tag = 'sn'+str(len(self.aSN)+1)
+                            self.log("Registrando Nodo Estacionario: "+tag+" IP: "+sip)
+                            self.aSN[tag] = {'ip': sip}
                         
                         r = {}
                         r['protocol'] = 'NEGRAV'
