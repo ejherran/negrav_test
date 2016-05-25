@@ -125,7 +125,7 @@ class Console(Thread):
                         data = json.loads(data)
                         
                         for i in range(len(r['sensor'])):
-                            print("\t\t\t"+r['sensor'][i]+": "+data['sensor'[i])
+                            print("\t\t\t"+r['sensor'][i]+": "+data['sensor'][i])
                     
                     except:
                         
