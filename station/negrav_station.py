@@ -171,7 +171,7 @@ class Console(Thread):
                     r['road_map'] = []
                     
                     for i in range(4, len(par), 2):
-                        r['road_map'].append[par[i], par[i+1]]
+                        r['road_map'].append([par[i], par[i+1]])
                     
                     try:
                     
