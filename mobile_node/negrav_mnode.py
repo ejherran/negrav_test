@@ -11,6 +11,29 @@ import pool
 import subprocess as sp
 from threading import Thread
 
+class Calendario(Thread):
+    
+    def __init__(self, node):
+        
+        super().__init__()
+        
+        self.node = node
+        self.agend = []
+        self.isRun = True
+    
+    def run(self):
+        
+        while(self.isRun):
+            
+            print(agend)
+    
+    def addTask(self, task):
+        self.agend.append(task)
+    
+    def detener(self):
+        self.isRun = False
+            
+
 class MNode(Thread):
     
     def __init__(self, nid, conf):
@@ -23,6 +46,10 @@ class MNode(Thread):
         self.conf = conf
         self.server = None
         self.sIP = None
+        
+        self.gps = [float(self.conf['GPS'][0]), float(self.conf['GPS'][1]), float(self.conf['GPS'][2])]
+        self.lps = self.gps[:]
+        self.calendario = None
         
         self.MN = []
         self.MNM = []
@@ -134,6 +161,9 @@ class MNode(Thread):
         self.server.bind( (self.sIp, self.conf['CLIENT_PORT']) )
         self.server.listen(8)
         
+        self.calendario = Calendario(self)
+        self.calendario.start()
+        
         self.state = 4
     
     def addProcess(self):
@@ -212,6 +242,22 @@ class MNode(Thread):
                         
                         print("\tEnviando datos.")
                         conn.sendall(json.dumps(r).encode('utf8'))
+                    
+                    elif(data['cmd'] == 'move_request'):
+                        
+                        print("\tSolicitud de movimiento."))
+                        
+                        task = {}
+                        task['type'] = 'move'
+                        task['target'] = (float(data['target_location'][0]), float(data['target_location'][1]))
+                        task['road'] = []
+                        for p in data['road_map']:
+                            task['road'].append((float(p[0]), float(p[1])))
+                        task['road'] = (float(data['target_location'][0]), float(data['target_location'][1]))
+                        task['period'] = 5
+                        task['atime'] = time.time()+task['period']
+                        
+                        self.calendario.addTask(task)
                         
                 else:
                     print("\tERROR: Comando no definido en la solicitud!.")

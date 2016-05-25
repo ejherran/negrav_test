@@ -150,6 +150,40 @@ class Console(Thread):
                         print("\t\t> Nodo no disponible", e)
                         
                     s.close()
+            elif(inp.lower().split(" ")[0] == 'move'):
+                par = inp.lower().split(" ")
+                tag = inp.lower().split(" ")[1]
+                
+                obj = None
+                
+                if(tag in list(self.station.aMN.keys())):
+                    obj = self.station.aMN[tag]
+                else:
+                    print("\t\t> Acción no disponible")
+                
+                if obj != None:
+                    
+                    r = {}
+                    r['protocol'] = 'NEGRAV'
+                    r['version'] = 'v1.0'
+                    r['cmd'] = 'move_request'
+                    r['target_location'] = [par[2], par[3]]
+                    r['road_map'] = []
+                    
+                    for i in range(4, len(par), 2):
+                        r['road_map'].append[par[i], par[i+1]]
+                    
+                    try:
+                    
+                        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        s.connect((obj['ip'], self.station.conf['CLIENT_PORT']))
+                        s.sendall(json.dumps(r).encode('utf8'))
+                    
+                    except Exception as e:
+                        
+                        print("\t\t> Nodo no disponible", e)
+                        
+                    s.close()
             else:
                 print("\t\t> "+inp)
         
