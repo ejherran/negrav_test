@@ -78,7 +78,7 @@ class Console(Thread):
                     print("\t\t\tGPS: Latitud ("+obj['GPS'][0]+")  Longitud("+obj['GPS'][1]+") Altitud("+obj['GPS'][2]+")")
                     print("\t\t\tSENSORES: ")
                     for s in obj['sensor']:
-                        print("\t\t\t\tNombre: "+s['name'])
+                        print("\n\t\t\t\tNombre: "+s['name'])
                         print("\t\t\t\tUnidades: "+', '.join(s['units']))
                         print("\t\t\t\tResolución: "+s['resolution'])
                         print("\t\t\t\tRango: "+' a '.join(s['range']))

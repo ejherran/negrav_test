@@ -11,7 +11,7 @@ import pool
 import subprocess as sp
 from threading import Thread
 
-class SNode(Thread):
+class MNode(Thread):
     
     def __init__(self, nid, conf):
         
@@ -24,8 +24,8 @@ class SNode(Thread):
         self.server = None
         self.sIP = None
         
-        self.SN = []
-        self.SNM = []
+        self.MN = []
+        self.MNM = []
     
     def run(self):
         
@@ -94,13 +94,13 @@ class SNode(Thread):
     
     def activar(self):
         
-        print("\n\tGenarando Sationary Node Pool...")
-        self.SN = pool.getPool(self.conf['SN_POOL'])
-        print("\tGenarando Stationary Node Momentary Pool...")
-        self.SNM = pool.getPool(self.conf['SNM_POOL'])
+        print("\n\tGenarando Mobile Node Pool...")
+        self.MN = pool.getPool(self.conf['MN_POOL'])
+        print("\tGenarando Mobile Node Momentary Pool...")
+        self.MNM = pool.getPool(self.conf['MNM_POOL'])
         
         print("\tSeleccionando IP momentanea...")
-        self.sIp = pool.getRndIP(self.SNM)
+        self.sIp = pool.getRndIP(self.MNM)
         
         self.activarWifi(self.sIp)
         
@@ -118,7 +118,7 @@ class SNode(Thread):
         r['version'] = 'v1.0'
         r['cmd'] = 'node_report'
         r['node_ip'] = self.sIp
-        r['type'] = 'SN'
+        r['type'] = 'MN'
         r['GPS'] = self.conf['GPS']
         r['sensor'] = self.conf['sensor']
         
@@ -298,13 +298,13 @@ def main(args):
                     CNF = json.load(data)
                     data.close()
                     
-                    sno = SNode(NID, CNF)
+                    MNo = MNode(NID, CNF)
                     try:
-                        sno.start()
-                        while not sno.kill:
+                        MNo.start()
+                        while not MNo.kill:
                             pass
                     except (KeyboardInterrupt, SystemExit):
-                        sno.detener()
+                        MNo.detener()
                     
                 except:
                     print("Error de configuración: Corregir config.json.")
