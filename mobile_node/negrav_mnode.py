@@ -25,7 +25,120 @@ class Calendario(Thread):
         
         while(self.isRun):
             
-            print(agend)
+            ltime = time.time()
+            idx = -1
+            
+            for i in range(len(self.agend)):
+                if self.agend[i]['atime'] <= ltime:
+                    idx = i
+                    break
+            
+            if idx >= 0:
+                
+                if(self.agend[idx]['type'] == 'move'):
+                    
+                    r = {}
+                    r['protocol'] = 'NEGRAV'
+                    r['version'] = 'v1.0'
+                    r['node_ip'] = self.node.sIp
+                    
+                    dis = random.random()
+                    
+                    if(dis >= 0 and dis < 0.01):
+                        
+                        r['cmd'] = 'move_done'
+                        r['current_location'] = [str(self.node.gps[0]), str(self.node.gps[1])]
+                        r['reason'] = 'out_of_range'
+                        r['batery'] = str(random.randint(5, 95))+"%"
+                        del(self.agend[idx])
+                        
+                    elif(dis >= 0.01 and dis < 0.02):
+                        
+                        r['cmd'] = 'move_done'
+                        r['current_location'] = [str(self.node.gps[0]), str(self.node.gps[1])]
+                        r['reason'] = 'no_movement'
+                        r['batery'] = str(random.randint(5, 95))+"%"
+                        del(self.agend[idx])
+                        
+                    else:
+                        delta = 0
+                        
+                        self.agend[idx]['cshut'] += 1
+                        
+                        if(self.agend[idx]['cshut'] == self.agend[idx]['shuts']):
+                            
+                            olat = float(self.agend[idx]['road'][0][0])
+                            olon = float(self.agend[idx]['road'][0][1])
+                            
+                            delta = (((olat-self.node.gps[0])**2) + ((olon-self.node.gps[1])**2))**0.5
+                            
+                            self.node.gps[0] = olat
+                            self.node.gps[1] = olon
+                            
+                            self.agend[idx]['road'] = self.agend[idx]['road'][1:]
+                            
+                            if(len(self.agend[idx]['road']) == 0):
+                                
+                                r['cmd'] = 'move_done'
+                                r['current_location'] = [str(self.node.gps[0]), str(self.node.gps[1])]
+                                r['reason'] = 'destination_reached'
+                                r['batery'] = str(random.randint(5, 95))+"%"
+                                del(self.agend[idx])
+                                
+                            else:
+                                self.agend[idx]['cshut'] = 0
+                                self.agend[idx]['shuts'] = random.randint(3, 10)
+                                self.agend[idx]['atime'] = ltime+self.agend[idx]['period']
+                                
+                                r['cmd'] = 'move_update'
+                                r['target_location'] = [str(self.agend[idx]['target'][0]), str(self.agend[idx]['target'][1])]
+                                r['move_delta'] = str(round(delta, 2))+"m"
+                                r['batery'] = str(random.randint(5, 95))+"%"
+                                
+                                if(len(self.agend[idx]['road']) > 1):
+                                    r['current_target'] = [str(self.agend[idx]['road'][0][0]), str(self.agend[idx]['road'][0][1])]
+                                
+                        else:
+                            
+                            olat = float(self.agend[idx]['road'][0][0])
+                            dlat = olat-self.node.gps[0]
+                            nlat = self.node.gps[0] + ( dlat * (0.8*random.random()) )
+                            
+                            olon = float(self.agend[idx]['road'][0][1])
+                            dlon = olon-self.node.gps[1]
+                            nlon = self.node.gps[1] + ( dlon * (0.8*random.random()) )
+                            
+                            delta = (((nlat-self.node.gps[0])**2) + ((nlon-self.node.gps[1])**2))**0.5
+                            self.node.gps[0] = nlat
+                            self.node.gps[1] = nlon
+                            self.agend[idx]['atime'] = ltime+self.agend[idx]['period']
+                            
+                            r['cmd'] = 'move_update'
+                            r['target_location'] = [str(self.agend[idx]['target'][0]), str(self.agend[idx]['target'][1])]
+                            r['move_delta'] = str(round(delta, 2))+"m"
+                            r['batery'] = str(random.randint(5, 95))+"%"
+                            
+                            if(len(self.agend[idx]['road']) > 1):
+                                r['current_target'] = [str(self.agend[idx]['road'][0][0]), str(self.agend[idx]['road'][0][1])]
+                            
+                    
+                    self.sendToStation(r)
+    
+    def sendToStation(self, r):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((self.node.conf['BS_IP'], self.node.conf['SERVER_PORT']))
+        s.sendall(json.dumps(r).encode('utf8'))
+        s.close()
+    
+    def getTaskInd(self, tipo):
+        
+        idx = -1
+        for i in range(len(self.agend)):
+            if(self.agend[i]['type'] == tipo):
+                idx = i
+                break
+        
+        return idx
     
     def addTask(self, task):
         self.agend.append(task)
@@ -245,19 +358,30 @@ class MNode(Thread):
                     
                     elif(data['cmd'] == 'move_request'):
                         
-                        print("\tSolicitud de movimiento."))
+                        print("\tSolicitud de movimiento.")
                         
-                        task = {}
-                        task['type'] = 'move'
-                        task['target'] = (float(data['target_location'][0]), float(data['target_location'][1]))
-                        task['road'] = []
-                        for p in data['road_map']:
-                            task['road'].append((float(p[0]), float(p[1])))
-                        task['road'] = (float(data['target_location'][0]), float(data['target_location'][1]))
-                        task['period'] = 5
-                        task['atime'] = time.time()+task['period']
+                        idx = self.calendario.getTaskInd('move')
                         
-                        self.calendario.addTask(task)
+                        if(idx < 0):
+                        
+                            task = {}
+                            task['type'] = 'move'
+                            task['target'] = (float(data['target_location'][0]), float(data['target_location'][1]))
+                            task['road'] = []
+                            for p in data['road_map']:
+                                task['road'].append((float(p[0]), float(p[1])))
+                            task['road'].append((float(data['target_location'][0]), float(data['target_location'][1])))
+                            task['shuts'] = random.randint(3, 10)
+                            task['cshut'] = 0
+                            task['period'] = 1
+                            task['atime'] = time.time()+task['period']
+                            
+                            self.calendario.addTask(task)
+                            
+                            print("\t\tSolicitud agendada y ejecutandose.")
+                        
+                        else:
+                            print("\t\tSolictud rechazada. Ya se esta ejecutando una solicitud de este tipo.")
                         
                 else:
                     print("\tERROR: Comando no definido en la solicitud!.")
@@ -326,6 +450,11 @@ class MNode(Thread):
             if self.server:
                 print("\t\t> Cerrando socket")
                 self.server.shutdown(socket.SHUT_RDWR)
+            
+            if self.calendario:
+                print("\t\t> Cerrando calendario")
+                self.calendario.detener()
+                
         except:
             pass
 
