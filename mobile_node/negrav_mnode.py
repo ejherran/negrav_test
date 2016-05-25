@@ -35,6 +35,8 @@ class Calendario(Thread):
             
             if idx >= 0:
                 
+                print(self.agend[idx])
+                
                 if(self.agend[idx]['type'] == 'move'):
                     
                     r = {}
@@ -123,6 +125,50 @@ class Calendario(Thread):
                             
                     
                     self.sendToStation(r)
+                
+                elif(self.agend[idx]['type'] == 'battery'):
+                    
+                    curbat = random.randint(0, 100)
+                    
+                    if (curbat >= self.agend[idx]['max'] or curbat <= self.agend[idx]['min']):
+                    
+                        r = {}
+                        r['protocol'] = 'NEGRAV'
+                        r['version'] = 'v1.0'
+                        r['cmd'] = 'alarm_report'
+                        r['node_ip'] = self.node.sIp
+                        r['sensor'] = self.agend[idx]['type']
+                        r['value'] = str(curbat)+"%"
+                        
+                        self.sendToStation(r)
+                    
+                    self.agend[idx]['atime'] = ltime+self.agend[idx]['period']
+                    
+                else:
+                    
+                    s2 = {}
+                    for s in self.node.conf['sensor']:
+                        if s['name'] == self.agend[idx]['type']:
+                            s2 = s
+                    
+                    minv = self.node.getNumPart(s2['range'][0])
+                    maxv = self.node.getNumPart(s2['range'][1])
+                    
+                    val = minv+((maxv-minv)*random.random())
+                    
+                    if (val >= self.agend[idx]['max'] or val <= self.agend[idx]['min']):
+                    
+                        r = {}
+                        r['protocol'] = 'NEGRAV'
+                        r['version'] = 'v1.0'
+                        r['cmd'] = 'alarm_report'
+                        r['node_ip'] = self.node.sIp
+                        r['sensor'] = self.agend[idx]['type']
+                        r['value'] = str(val)+s2['units'][0]
+                        
+                        self.sendToStation(r)
+                    
+                    self.agend[idx]['atime'] = ltime+self.agend[idx]['period']
     
     def sendToStation(self, r):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -382,6 +428,43 @@ class MNode(Thread):
                         
                         else:
                             print("\t\tSolictud rechazada. Ya se esta ejecutando una solicitud de este tipo.")
+                    
+                    elif(data['cmd'] == 'node_configure'):
+                        
+                        print("\tSolicitud de configuración.")
+                        
+                        tipo = data['sensor'][0]['name']
+                        isSen = False
+                        for s in self.conf['sensor']:
+                            if tipo == s['name']:
+                                isSen = True
+                                break
+                        
+                        if isSen or (tipo == 'battery'):
+                        
+                            idx = self.calendario.getTaskInd(tipo)
+                            
+                            task = {}
+                            task['type'] = tipo
+                            task['max'] = float(data['sensor'][0]['alarms'][0])
+                            task['min'] = float(data['sensor'][0]['alarms'][1])
+                            task['period'] = float(data['sensor'][0]['period'])
+                            task['atime'] = time.time()+task['period']
+                            
+                            if(idx < 0):
+                            
+                                self.calendario.addTask(task)
+                                
+                                print("\t\tSolicitud agendada y ejecutandose.")
+                            
+                            else:
+                                
+                                self.calendario.agend[idx] = task
+                                
+                                print("\t\tSolictud actualizada.")
+                        
+                        else:
+                            print("\t\tSolictud rechazada. En nodo no cuenta con el sensor solicitado.")
                         
                 else:
                     print("\tERROR: Comando no definido en la solicitud!.")
