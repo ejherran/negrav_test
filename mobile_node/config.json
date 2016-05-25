@@ -1,0 +1,25 @@
+{
+    "TOOL": "iw",
+    "DEV": "wlan0",
+    "SERVER_PORT": 5310,
+    "CLIENT_PORT": 5320,
+    "BS_IP": "10.0.0.100",
+    "MN_POOL": "10.2.0.1-10.2.10.255",
+    "MNM_POOL": "10.2.100.1-10.2.100.100",
+    "NETMASK": "255.252.0.0",
+    "GPS": ["1.0", "2.1", "2.0"],
+    "sensor": [
+        {
+            "name":"temp",
+            "units": ["ºC", "ºK", "ºF"],
+            "resolution": "0.5ºC",
+            "range":["-50ºC", "70ºC"]
+        },
+        {
+            "name":"presure",
+            "units": ["psi"],
+            "resolution": "0.2psi",
+            "range":["0psi", "80psi"]
+        }
+    ]
+}
