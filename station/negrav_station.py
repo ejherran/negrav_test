@@ -199,8 +199,42 @@ class Console(Thread):
                         print("\t\t> Nodo no disponible", e)
                         
                     s.close()
+            elif(inp.lower().split(" ")[0] == 'conf'):
+                par = inp.lower().split(" ")
+                tag = inp.lower().split(" ")[1]
+                
+                obj = None
+                
+                if(tag in list(self.station.aSN.keys())):
+                    obj = self.station.aSN[tag]
+                elif(tag in list(self.station.aMN.keys())):
+                    obj = self.station.aMN[tag]
+                else:
+                    print("\t\t> Configuración no disponible")
+                
+                if obj != None:
+                    
+                    r = {}
+                    r['protocol'] = 'NEGRAV'
+                    r['version'] = 'v1.0'
+                    r['cmd'] = 'node_configure'
+                    r['assign_ip'] = obj['ip']
+                    r['set_node_time'] = str(time.time())
+                    r['sensor'] = [{'name':par[2], 'period':par[3], 'alarms':[par[4], par[5]]}]
+                    
+                    try:
+                    
+                        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        s.connect((obj['ip'], self.station.conf['CLIENT_PORT']))
+                        s.sendall(json.dumps(r).encode('utf8'))
+                        
+                    except Exception as e:
+                        
+                        print("\t\t> Nodo no disponible", e)
+                        
+                    s.close()
             else:
-                print("\t\t> "+inp)
+                print("\t\t> "+inp+" ?")
         
         self.station.detener()
 
