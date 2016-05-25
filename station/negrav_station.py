@@ -323,7 +323,8 @@ class Station(Thread):
         print("\tFijando IP "+ip+"!.", res[0])
         
         if(self.conf['TOOL'] == 'wt'):
-            res = sp.getstatusoutput("iwconfig "+self.conf['DEV']+" essid \"NEGRAV-"+self.nid+"\"")
+            chn = pool.searchChannel(self.conf['DEV'], "NEGRAV-"+self.nid)
+            res = sp.getstatusoutput("iwconfig "+self.conf['DEV']+" essid \"NEGRAV-"+self.nid+"\" channel "+chn)
         else:
             res = sp.getstatusoutput("iw dev "+self.conf['DEV']+" connect \"NEGRAV-"+self.nid+"\"")
         

@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import random
+import subprocess as sp
 
 def toListInt(l):
     res = []
@@ -52,3 +53,31 @@ def getPool(cnf):
 def getRndIP(pool):
     idx = random.randint(0, len(pool)-1)
     return pool[idx]
+
+def searchChannel(dev, ssid):
+    l = sp.getstatusoutput("iwlist "+dev+" scan | grep -E \"ESSID|Frequency\"")[1]
+    l = l.split("\n")
+    nl = []
+    lim = len(l)
+    
+    i = 0
+    while(i < (lim-1)):
+        nl.append(l[i]+l[i+1])
+        i += 2
+    
+    tar = ''
+    for e in nl:
+        if('ESSID:"'+ssid+'"' in e):
+            tar = e
+            break
+    tar = tar.replace("(", "|||")
+    tar = tar.replace(")", "|||")
+    tar = tar.split("|||")
+    
+    tar2 = ''
+    for e in tar:
+        if 'Channel' in e:
+            tar2 = e
+            break
+            
+    return tar2.split(" ")[1]
