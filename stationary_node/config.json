@@ -1,4 +1,5 @@
 {
+    "TOOL": "iw",
     "DEV": "wlan0",
     "SERVER_PORT": 5310,
     "CLIENT_PORT": 5320,

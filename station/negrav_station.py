@@ -328,10 +328,12 @@ class Station(Thread):
             res = sp.getstatusoutput("iw dev "+self.conf['DEV']+" connect \"NEGRAV-"+self.nid+"\"")
         
         print("\tConectado A La Red NEGRAV-"+self.nid+"!.", res[0])
-        print("\tEstabilizando El Canal.\n\tEsperando 10s...")
+        print("\tEstabilizando El Canal.\n\t\tEsperando 10s...")
         time.sleep(10)
         
     def testBase(self):
+        
+        print("\n\tBuscando Base Station...")
         
         try:
             r = {}
@@ -342,9 +344,11 @@ class Station(Thread):
             s.sendall(json.dumps(r).encode('utf8'))
             s.close()
             
+            print("\t\tOk!.")
             return True
             
         except:
+            print("\t\tFail!.")
             return False
     
     def esperar(self):

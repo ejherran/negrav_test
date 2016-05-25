@@ -58,42 +58,39 @@ class SNode(Thread):
         
         print("\n\tBuscando red de trabajo: NEGRAV-"+self.nid+"\n")
         
-        for i in range(5):
+        for i in range(10):
             
-            wifiList = sp.getstatusoutput("iwlist "+self.conf['DEV']+" scan | grep SSID")[1]
+            if(self.conf['TOOL'] == 'wt'):
             
-            if 'ESSID:"NEGRAV-'+self.nid+'"' in wifiList:
-                print("\t\tIntento básico "+str(i+1)+": Ok!")
-                isBase = False
-                break
+                wifiList = sp.getstatusoutput("iwlist "+self.conf['DEV']+" scan | grep SSID")[1]
+            
+                if 'ESSID:"NEGRAV-'+self.nid+'"' in wifiList:
+                    print("\t\tIntento "+str(i+1)+": Ok!")
+                    isBase = False
+                    break
+                else:
+                    print("\t\tIntento "+str(i+1)+": Fail!")
+            
             else:
-                print("\t\tIntento básico "+str(i+1)+": Fail!")
-        
-        print("")
-        
-        if isBase:
-            
-            for i in range(5):
             
                 wifiList = sp.getstatusoutput("iw dev "+self.conf['DEV']+" scan | grep SSID")[1]
                 
                 if 'SSID: NEGRAV-'+self.nid in wifiList:
-                    print("\t\tIntento avanzado "+str(i+1)+": Ok!")
+                    print("\t\tIntento "+str(i+1)+": Ok!")
                     isBase = False
                     break
                 else:
-                    print("\t\tIntento avanzado "+str(i+1)+": Fail!")
+                    print("\t\tIntento "+str(i+1)+": Fail!")
         
         if isBase:
             print("\n\tRed de trabajo: NEGRAV-"+self.nid+" no encontrada!.\n")
             self.detener()
         else:
-            print("\n\tActivando Nodo Estacionario!")
             self.state = 2
     
     def activar(self):
         
-        print("\tGenarando Sationary Node Pool...")
+        print("\n\tGenarando Sationary Node Pool...")
         self.SN = pool.getPool(self.conf['SN_POOL'])
         print("\tGenarando Stationary Node Momentary Pool...")
         self.SNM = pool.getPool(self.conf['SNM_POOL'])
@@ -103,9 +100,13 @@ class SNode(Thread):
         
         self.activarWifi(self.sIp)
         
-        self.addProcess()
+        if(self.testBase()):
+            self.addProcess()
+            self.state = 3
+        else:
+            print("\n\tBase Station no encontrada!.\n")
+            self.detener()
         
-        self.state = 3
     
     def reporte(self):
         
@@ -158,14 +159,37 @@ class SNode(Thread):
     
     def activarWifi(self, ip):
         
-        res = sp.getstatusoutput("ifconfig "+self.conf['DEV']+" down")
-        print("\tPreparando "+self.conf['DEV']+"!.", res[0])
-        
-        res = sp.getstatusoutput("iwconfig "+self.conf['DEV']+" mode ad-hoc essid \"NEGRAV-"+self.nid+"\"")
-        print("\tCreando red Ad-Hoc NEGRAV-"+self.nid+"!.", res[0])
-        
         res = self.fijarIp(ip)
         print("\tFijando IP "+ip+"!.", res[0])
+        
+        if(self.conf['TOOL'] == 'wt'):
+            res = sp.getstatusoutput("iwconfig "+self.conf['DEV']+" essid \"NEGRAV-"+self.nid+"\"")
+        else:
+            res = sp.getstatusoutput("iw dev "+self.conf['DEV']+" connect \"NEGRAV-"+self.nid+"\"")
+        
+        print("\tConectado A La Red NEGRAV-"+self.nid+"!.", res[0])
+        print("\tEstabilizando El Canal.\n\t\tEsperando 10s...")
+        time.sleep(10)
+    
+    def testBase(self):
+        
+        print("\n\tBuscando Base Station...")
+        
+        try:
+            r = {}
+            r['cmd'] = 'test_bs'
+            
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((self.conf['BS_IP'], self.conf['SERVER_PORT']))
+            s.sendall(json.dumps(r).encode('utf8'))
+            s.close()
+            
+            print("\t\tOk!.")
+            return True
+            
+        except:
+            print("\t\tFail!.")
+            return False
     
     def detener(self):
         
