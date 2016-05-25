@@ -44,7 +44,7 @@ class Calendario(Thread):
                     
                     dis = random.random()
                     
-                    if(dis >= 0 and dis < 0.01):
+                    if(dis >= 0 and dis < self.node.conf['MOVE_OUT']):
                         
                         r['cmd'] = 'move_done'
                         r['current_location'] = [str(self.node.gps[0]), str(self.node.gps[1])]
@@ -52,7 +52,7 @@ class Calendario(Thread):
                         r['batery'] = str(random.randint(5, 95))+"%"
                         del(self.agend[idx])
                         
-                    elif(dis >= 0.01 and dis < 0.02):
+                    elif(dis >= self.node.conf['MOVE_OUT'] and dis < (self.node.conf['MOVE_OUT']+self.node.conf['MOVE_ZERO'])):
                         
                         r['cmd'] = 'move_done'
                         r['current_location'] = [str(self.node.gps[0]), str(self.node.gps[1])]
@@ -373,7 +373,7 @@ class MNode(Thread):
                             task['road'].append((float(data['target_location'][0]), float(data['target_location'][1])))
                             task['shuts'] = random.randint(3, 10)
                             task['cshut'] = 0
-                            task['period'] = 1
+                            task['period'] = self.conf['MOVE_DELAY']
                             task['atime'] = time.time()+task['period']
                             
                             self.calendario.addTask(task)
