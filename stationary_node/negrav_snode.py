@@ -128,6 +128,12 @@ class SNode(Thread):
         s.sendall(json.dumps(r).encode('utf8'))
         
         s.close()
+        
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.bind( (self.sIp, self.conf['CLIENT_PORT']) )
+        self.server.listen(8)
+        
+        self.state = 4
     
     def addProcess(self):
         
@@ -154,12 +160,6 @@ class SNode(Thread):
         print("\tFijando IP "+self.sIp+"!.", res[0])
         
         s.close()
-        
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.bind( (self.sIp, self.conf['CLIENT_PORT']) )
-        self.server.listen(8)
-        
-        self.state = 4
     
     def esperar(self):
         

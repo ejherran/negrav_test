@@ -68,7 +68,7 @@ class Console(Thread):
                 
                 if(tag in list(self.station.aSN.keys())):
                     obj = self.station.aSN[tag]
-                elif(tag in list(self.station.aNM.keys())):
+                elif(tag in list(self.station.aMN.keys())):
                     obj = self.station.aMN[tag]
                 else:
                     print("\t\t> Descipción no disponible")
@@ -91,7 +91,7 @@ class Console(Thread):
                 
                 if(tag in list(self.station.aSN.keys())):
                     obj = self.station.aSN[tag]
-                elif(tag in list(self.station.aNM.keys())):
+                elif(tag in list(self.station.aMN.keys())):
                     obj = self.station.aMN[tag]
                 else:
                     print("\t\t> Consulta no disponible")
