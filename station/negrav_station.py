@@ -78,6 +78,21 @@ class Console(Thread):
                 for k in tl:
                     print("\t\t\t"+k+": "+self.station.aMN[k]['ip'])
             
+            elif(inp.lower() == 'show moves'):
+                
+                tl = list(self.station.moves.keys())
+                tl.sort()
+                
+                print("\t\t> ESTADO DE LOS NODOS EN MOVIMIENTO")
+                for k in tl:
+                    print("\n\t\t\t"+k+": ")
+                    td = list(self.station.moves[k].keys())
+                    td.sort()
+                    
+                    for w in td:
+                        print("\t\t\t\t"+w+": "+self.station.moves[k][w])
+                    
+            
             elif(inp.lower().split(" ")[0] == 'desc'):
                 
                 tag = inp.lower().split(" ")[1]
@@ -215,6 +230,7 @@ class Station(Thread):
         self.hVer = ''
         self.lastBK = 0
         self.raiseBk = False
+        self.moves = {}
     
     def run(self):
         
@@ -596,8 +612,32 @@ class Station(Thread):
                             self.aMN[tag]['type'] = data['type']
                             self.aMN[tag]['GPS'] = data['GPS']
                             self.aMN[tag]['sensor'] = data['sensor']
-                        
                     
+                    elif(data['cmd'] == 'move_update'):
+                        tag = self.getTag(data['node_ip'])
+                        self.log("Movimiento De Nodo ["+tag+":"+data['node_ip']+"]")
+                        self.moves[tag] = {'Estado: ':'En Movimiento', 'Destino': "("+data['target_location'][0]+", "+data['target_location'][1]+")", "Movimiento": data['move_delta']}
+                    
+                    elif(data['cmd'] == 'move_done'):
+                        tag = self.getTag(data['node_ip'])
+                        self.log("Fin Del Movimiento De Nodo ["+tag+":"+data['node_ip']+"]")
+                        
+                        estado = ''
+                        if(data['reason'] == 'destination_reached'):
+                            estado = 'Destino Alcanzado'
+                        elif(data['reason'] == 'out_of_range'):
+                            estado = 'Fuera de alcance. Retornando al último punto de enlace.'
+                        else:
+                            estado = 'Bloqueado. Imposible llegar al destino.'
+                        
+                        self.aMN[tag]['GPS'][0] = data['current_location'][0]
+                        self.aMN[tag]['GPS'][1] = data['current_location'][1]
+                        
+                        self.moves[tag] = {'Estado: ':estado, 'Posición': "("+data['current_location'][0]+", "+data['current_location'][1]+")"}
+                        
+                        self.nextVersion()
+                        self.log("Actualizando Data Version: "+self.hVer)
+                        
                     elif(data['cmd'] == 'backup_up2date'):
                         
                         self.log("Solicitud de actualización de backup.")
@@ -684,7 +724,7 @@ class Station(Thread):
                     tag = k
                     break
         
-        return k
+        return tag
 
 
 def main(args):
