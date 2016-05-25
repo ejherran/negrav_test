@@ -205,15 +205,15 @@ class SNode(Thread):
                         conn.sendall(json.dumps(r).encode('utf8'))
                         
                 else:
-                    self.log("ERROR: Comando no definido en la solicitud!.")
+                    print("\tERROR: Comando no definido en la solicitud!.")
                 
             except Exception as e:
-                self.log("ERROR: Formato de solicitud incorrecta!. "+str(e))
+                print("\tERROR: Formato de solicitud incorrecta!. "+str(e))
             
             conn.close()
             
         except Exception as e:
-            self.log("ERROR: Problemas de red!. "+str(e))
+            pass
     
     def fijarIp(self, ip):
         res = sp.getstatusoutput("ifconfig "+self.conf['DEV']+" "+ip+" netmask "+self.conf['NETMASK'])
