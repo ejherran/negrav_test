@@ -218,7 +218,7 @@ class Station(Thread):
                 lbk.append( self.aBBS[k]['ip'] )
             
             lbk.sort()
-            
+            print(self.sIp, lbk)
             if(self.sIp == lbk[0]):
                 
                 lbk = lbk[1:]
@@ -265,17 +265,34 @@ class Station(Thread):
         self.aMN = {}
         
         for bip in data['bkup_list']:
+            
+            try:
+                idx = self.BBS.index(bip)
+                del(self.BBS[idx])
+            except:
+                pass
+            
             tag = 'bk'+str(len(self.aBBS)+1)
             self.aBBS[tag] = {'ip': bip}
         
         for node in data['nodes']:
             if(node['type'] == 'SN'):
+                try:
+                    idx = self.SN.index(node['node_ip'])
+                    del(self.SN[idx])
+                except:
+                    pass
                 tag = 'sn'+str(len(self.aSN)+1)
                 self.aSN[tag] = {'ip': node['node_ip']}
                 self.aSN[tag]['type'] = node['type']
                 self.aSN[tag]['GPS'] = node['GPS']
                 self.aSN[tag]['sensor'] = node['sensor']
             else:
+                try:
+                    idx = self.MN.index(node['node_ip'])
+                    del(self.MN[idx])
+                except:
+                    pass
                 tag = 'mn'+str(len(self.aMN)+1)
                 self.aMN[tag] = {'ip': node['node_ip']}
                 self.aMN[tag]['type'] = node['type']
