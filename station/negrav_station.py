@@ -24,6 +24,114 @@ class Console(Thread):
             if(inp.lower() == 'exit'):
                 print("\t\t> Termiando Procesos!.")
                 break
+            elif(inp.lower() == 'list'):
+                
+                print("\t\t> BACKUPS")
+                for k in list(self.station.aBBS.keys()):
+                    print("\t\t\t"+k+": "+self.station.aBBS[k]['ip'])
+                
+                print("")
+                
+                print("\t\t> NODOS ESTACIONARIOS")
+                for k in list(self.station.aSN.keys()):
+                    print("\t\t\t"+k+": "+self.station.aSN[k]['ip'])
+                
+                print("")
+                
+                print("\t\t> NODOS MÓVILES")
+                for k in list(self.station.aMN.keys()):
+                    print("\t\t\t"+k+": "+self.station.aMN[k]['ip'])
+            
+            elif(inp.lower() == 'list bk'):
+                
+                print("\t\t> BACKUPS")
+                for k in list(self.station.aBBS.keys()):
+                    print("\t\t\t"+k+": "+self.station.aBBS[k]['ip'])
+            
+            elif(inp.lower() == 'list sn'):
+                
+                print("\t\t> NODOS ESTACIONARIOS")
+                for k in list(self.station.aSN.keys()):
+                    print("\t\t\t"+k+": "+self.station.aSN[k]['ip'])
+                    
+            elif(inp.lower() == 'list mn'):
+                
+                print("\t\t> NODOS MÓVILES")
+                for k in list(self.station.aMN.keys()):
+                    print("\t\t\t"+k+": "+self.station.aMN[k]['ip'])
+            
+            elif(inp.lower().split(" ")[0] == 'desc'):
+                
+                tag = inp.lower().split(" ")[1]
+                
+                obj = None
+                
+                if(tag in list(self.station.aSN.keys())):
+                    obj = self.station.aSN[tag]
+                elif(tag in list(self.station.aNM.keys())):
+                    obj = self.station.aMN[tag]
+                else:
+                    print("\t\t> Descipción no disponible")
+                
+                if obj != None:
+                    print("\t\t\tIP: "+obj['ip'])
+                    print("\t\t\tGPS: Latitud ("+obj['GPS'][0]+")  Longitud("+obj['GPS'][1]+") Altitud("+obj['GPS'][2]+")")
+                    print("\t\t\tSENSORES: ")
+                    for s in obj['sensor']:
+                        print("\t\t\t\tNombre: "+s['name'])
+                        print("\t\t\t\tUnidades: "+', '.join(s['units']))
+                        print("\t\t\t\tResolución: "+s['resolution'])
+                        print("\t\t\t\tRango: "+' a '.join(s['range']))
+            
+            elif(inp.lower().split(" ")[0] == 'get'):
+                par = inp.lower().split(" ")
+                tag = inp.lower().split(" ")[1]
+                
+                obj = None
+                
+                if(tag in list(self.station.aSN.keys())):
+                    obj = self.station.aSN[tag]
+                elif(tag in list(self.station.aNM.keys())):
+                    obj = self.station.aMN[tag]
+                else:
+                    print("\t\t> Consulta no disponible")
+                
+                if obj != None:
+                    
+                    r = {}
+                    r['protocol'] = 'NEGRAV'
+                    r['version'] = 'v1.0'
+                    r['cmd'] = 'get'
+                    
+                    if(par[2] == 'all'):
+                        r['get_type'] = 'all'
+                        ls = []
+                        for s in obj['sensor']:
+                            ls.append(s['name'])
+                    else:
+                        r['get_type'] = 'array'
+                        ls = par[3:]
+                    
+                    r['sensor'] = ls
+                    
+                    try:
+                    
+                        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        s.connect((obj['ip'], self.conf['CLIENT_PORT']))
+                        s.sendall(json.dumps(r).encode('utf8'))
+                        
+                        data = s.recv(4096)
+                        data = data.decode('utf8')
+                        data = json.loads(data)
+                        
+                        for i in range(len(r['sensor'])):
+                            print("\t\t\t"+r['sensor'][i]+": "+data['sensor'[i])
+                    
+                    except:
+                        
+                        print("\t\t> Nodo no disponible")
+                        
+                    s.close()
             else:
                 print("\t\t> "+inp)
         
@@ -218,7 +326,7 @@ class Station(Thread):
                 lbk.append( self.aBBS[k]['ip'] )
             
             lbk.sort()
-            print(self.sIp, lbk)
+            
             if(self.sIp == lbk[0]):
                 
                 lbk = lbk[1:]

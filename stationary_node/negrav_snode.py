@@ -41,8 +41,11 @@ class SNode(Thread):
                     self.activar()
                 elif self.state == 3:
                     self.reporte()
-                    self.detener()
+                elif self.state == 4:
+                    self.esperar()
         
+        res = sp.getstatusoutput("service network-manager start")
+        print("\t\t> Reactivando Network-Manager!.", res[0])
         print("\t\t> Deteniendo el servicio!.")
         print("\n----------------------------------------------------------------\n")
     
@@ -107,7 +110,6 @@ class SNode(Thread):
             print("\n\tBase Station no encontrada!.\n")
             self.detener()
         
-    
     def reporte(self):
         
         r = {}
@@ -152,6 +154,66 @@ class SNode(Thread):
         print("\tFijando IP "+self.sIp+"!.", res[0])
         
         s.close()
+        
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.bind( (self.sIp, self.conf['CLIENT_PORT']) )
+        self.server.listen(8)
+        
+        self.state = 4
+    
+    def esperar(self):
+        
+        print("\n\tEsperando solicitud")
+        
+        try:
+            conn, addr = self.server.accept()
+            data = conn.recv(4096)
+            
+            data = data.decode('utf8')
+            print("\tMSG: "+data)
+            
+            try:
+                data = json.loads(data)
+                
+                if('cmd' in list(data.keys())):
+                    
+                    if(data['cmd'] == 'get'):
+                        
+                        print("\tSolicitud de datos.")
+                        
+                        sensor = []
+                        
+                        for s in data['sensor']:
+                            f = False
+                            for s2 in self.conf['sensor']:
+                                if s == s2['name']:
+                                    sensor.append("OK-VAL")
+                                    f = True
+                                    break
+                            
+                            if(not f):
+                                sensor.append("NONE")
+                        
+                        r = {}
+                        r['protocol'] = 'NEGRAV'
+                        r['version'] = 'v1.0'
+                        r['cmd'] = 'get'
+                        r['get_type'] = data['get_type']
+                        r['sensor'] = sensor
+                        
+                        print("\tEnviando datos.")
+                        conn.sendall(json.dumps(r).encode('utf8'))
+                        
+                else:
+                    self.log("ERROR: Comando no definido en la solicitud!.")
+                
+            except Exception as e:
+                self.log("ERROR: Formato de solicitud incorrecta!. "+str(e))
+            
+            conn.close()
+            
+        except Exception as e:
+            self.log("ERROR: Problemas de red!. "+str(e))
     
     def fijarIp(self, ip):
         res = sp.getstatusoutput("ifconfig "+self.conf['DEV']+" "+ip+" netmask "+self.conf['NETMASK'])
