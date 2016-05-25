@@ -26,38 +26,56 @@ class Console(Thread):
                 break
             elif(inp.lower() == 'list'):
                 
+                tl = list(self.station.aBBS.keys())
+                tl.sort()
                 print("\t\t> BACKUPS")
-                for k in list(self.station.aBBS.keys()):
+                for k in tl:
                     print("\t\t\t"+k+": "+self.station.aBBS[k]['ip'])
                 
                 print("")
                 
+                tl = list(self.station.aSN.keys())
+                tl.sort()
+                
                 print("\t\t> NODOS ESTACIONARIOS")
-                for k in list(self.station.aSN.keys()):
+                for k in tl:
                     print("\t\t\t"+k+": "+self.station.aSN[k]['ip'])
                 
                 print("")
                 
+                tl = list(self.station.aMN.keys())
+                tl.sort()
+                
                 print("\t\t> NODOS MÓVILES")
-                for k in list(self.station.aMN.keys()):
+                for k in tl:
                     print("\t\t\t"+k+": "+self.station.aMN[k]['ip'])
             
             elif(inp.lower() == 'list bk'):
                 
+                tl = list(self.station.aBBS.keys())
+                tl.sort()
                 print("\t\t> BACKUPS")
-                for k in list(self.station.aBBS.keys()):
+                for k in tl:
                     print("\t\t\t"+k+": "+self.station.aBBS[k]['ip'])
             
             elif(inp.lower() == 'list sn'):
                 
+                tl = list(self.station.aSN.keys())
+                tl.sort()
+                
                 print("\t\t> NODOS ESTACIONARIOS")
-                for k in list(self.station.aSN.keys()):
+                for k in tl:
                     print("\t\t\t"+k+": "+self.station.aSN[k]['ip'])
+                
+                print("")
                     
             elif(inp.lower() == 'list mn'):
                 
+                tl = list(self.station.aMN.keys())
+                tl.sort()
+                
                 print("\t\t> NODOS MÓVILES")
-                for k in list(self.station.aMN.keys()):
+                for k in tl:
                     print("\t\t\t"+k+": "+self.station.aMN[k]['ip'])
             
             elif(inp.lower().split(" ")[0] == 'desc'):
@@ -78,7 +96,7 @@ class Console(Thread):
                     print("\t\t\tGPS: Latitud ("+obj['GPS'][0]+")  Longitud("+obj['GPS'][1]+") Altitud("+obj['GPS'][2]+")")
                     print("\t\t\tSENSORES: ")
                     for s in obj['sensor']:
-                        print("\t\t\t\tNombre: "+s['name'])
+                        print("\n\t\t\t\tNombre: "+s['name'])
                         print("\t\t\t\tUnidades: "+', '.join(s['units']))
                         print("\t\t\t\tResolución: "+s['resolution'])
                         print("\t\t\t\tRango: "+' a '.join(s['range']))
@@ -516,7 +534,7 @@ class Station(Thread):
                             self.log("Detectado Nodo Móvil.")
                             sip = self.MN[0]
                             self.MN = self.MN[1:]
-                            tag = 'sn'+str(len(self.aMN)+1)
+                            tag = 'mn'+str(len(self.aMN)+1)
                             self.log("Registrando Nodo Móvil: "+tag+" IP: "+sip)
                             self.aMN[tag] = {'ip': sip}
                         
