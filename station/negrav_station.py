@@ -110,14 +110,14 @@ class Console(Thread):
                             ls.append(s['name'])
                     else:
                         r['get_type'] = 'array'
-                        ls = par[3:]
+                        ls = par[2:]
                     
                     r['sensor'] = ls
                     
                     try:
                     
                         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                        s.connect((obj['ip'], self.conf['CLIENT_PORT']))
+                        s.connect((obj['ip'], self.station.conf['CLIENT_PORT']))
                         s.sendall(json.dumps(r).encode('utf8'))
                         
                         data = s.recv(4096)
@@ -127,9 +127,9 @@ class Console(Thread):
                         for i in range(len(r['sensor'])):
                             print("\t\t\t"+r['sensor'][i]+": "+data['sensor'][i])
                     
-                    except:
+                    except Exception as e:
                         
-                        print("\t\t> Nodo no disponible")
+                        print("\t\t> Nodo no disponible", e)
                         
                     s.close()
             else:
