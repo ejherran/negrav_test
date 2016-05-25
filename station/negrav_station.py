@@ -105,40 +105,37 @@ class Station(Thread):
         
         print("\n\tBuscando red de trabajo: NEGRAV-"+self.nid+"\n")
         
-        for i in range(5):
+        for i in range(10):
             
-            wifiList = sp.getstatusoutput("iwlist "+self.conf['DEV']+" scan | grep SSID")[1]
+            if(self.conf['TOOL'] == 'wt'):
             
-            if 'ESSID:"NEGRAV-'+self.nid+'"' in wifiList:
-                print("\t\tIntento básico "+str(i+1)+": Ok!")
-                isBase = False
-                break
+                wifiList = sp.getstatusoutput("iwlist "+self.conf['DEV']+" scan | grep SSID")[1]
+            
+                if 'ESSID:"NEGRAV-'+self.nid+'"' in wifiList:
+                    print("\t\tIntento "+str(i+1)+": Ok!")
+                    isBase = False
+                    break
+                else:
+                    print("\t\tIntento "+str(i+1)+": Fail!")
+            
             else:
-                print("\t\tIntento básico "+str(i+1)+": Fail!")
-        
-        print("")
-        
-        if isBase:
-            
-            for i in range(5):
             
                 wifiList = sp.getstatusoutput("iw dev "+self.conf['DEV']+" scan | grep SSID")[1]
                 
                 if 'SSID: NEGRAV-'+self.nid in wifiList:
-                    print("\t\tIntento avanzado "+str(i+1)+": Ok!")
+                    print("\t\tIntento "+str(i+1)+": Ok!")
                     isBase = False
                     break
                 else:
-                    print("\t\tIntento avanzado "+str(i+1)+": Fail!")
+                    print("\t\tIntento "+str(i+1)+": Fail!")
         
         if isBase:
-            self.state = 2
-            print("\n\tEntrando en modo Base Station!")
+            print("\n\tRed de trabajo: NEGRAV-"+self.nid+" no encontrada!.\n")
+            self.detener()
         else:
-            print("\n\tEntrando en modo Backup Base Station!")
-            self.state = 3
+            self.preStation()
     
-    def baseStation(self):
+    def preStation(self):
         
         print("\n\tGenarando Backup Base Station Pool...")
         self.BBS = pool.getPool(self.conf['BBS_POOL'])
@@ -153,21 +150,28 @@ class Station(Thread):
         print("\tGenarando Mobile Node Momentary Pool...\n")
         self.MNM = pool.getPool(self.conf['MNM_POOL'])
         
-        self.activarWifi(self.conf['BS_IP'])
+        self.sIp = pool.getRndIP(self.BSM)
+        
+        self.activarWifi(self.sIp)
+        
+        if (not self.testBase()):
+            self.state = 2
+        else:
+            self.state = 3
+    
+    def baseStation(self):
+        
+        print("\n\tEntrando En Modo Base Station!.")
+        print("\tFijando IP ["+self.conf['BS_IP']+"].")
+        self.fijarIp(self.conf['BS_IP'])
+        
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.bind( (self.conf['BS_IP'], self.conf['SERVER_PORT']) )
         self.server.listen(8)
         self.state = 4
     
     def backup(self):
-        print("\n\tGenarando Backup Base Station Pool...")
-        self.BBS = pool.getPool(self.conf['BBS_POOL'])
-        print("\tGenarando Base Station Momentary Pool...")
-        self.BSM = pool.getPool(self.conf['BSM_POOL'])
-        print("\tSeleccionando IP momentanea...")
-        self.sIp = pool.getRndIP(self.BSM)
-        
-        self.activarWifi(self.sIp)
+        print("\n\tEntrando En Modo Backup Base Station!.")
         
         self.addProcess()
         
@@ -315,15 +319,31 @@ class Station(Thread):
         
     def activarWifi(self, ip):
         
-        if(not self.raiseBk):
-            res = sp.getstatusoutput("ifconfig "+self.conf['DEV']+" down")
-            print("\tPreparando "+self.conf['DEV']+"!.", res[0])
-            
-            res = sp.getstatusoutput("iwconfig "+self.conf['DEV']+" mode ad-hoc essid \"NEGRAV-"+self.nid+"\" channel "+str(self.conf['CHANNEL']))
-            print("\tCreando red Ad-Hoc NEGRAV-"+self.nid+"!.", res[0])
-        
         res = self.fijarIp(ip)
         print("\tFijando IP "+ip+"!.", res[0])
+        
+        if(self.conf['TOOL'] == 'wt'):
+            res = sp.getstatusoutput("iwconfig "+self.conf['DEV']+" essid \"NEGRAV-"+self.nid+"\"")
+        else:
+            res = sp.getstatusoutput("iw dev "+self.conf['DEV']+" connect \"NEGRAV-"+self.nid+"\"")
+        
+        print("\tConectado A La Red NEGRAV-"+self.nid+"!.", res[0])
+        
+    def testBase(self):
+        
+        try:
+            r = {}
+            r['cmd'] = 'test_bs'
+            
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((self.conf['BS_IP'], self.conf['SERVER_PORT']))
+            s.sendall(json.dumps(r).encode('utf8'))
+            s.close()
+            
+            return True
+            
+        except:
+            return False
     
     def esperar(self):
         

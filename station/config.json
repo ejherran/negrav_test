@@ -1,6 +1,6 @@
 {
+    "TOOL": "iw",
     "DEV": "wlan0",
-    "CHANNEL": 6,
     "SERVER_PORT": 5310,
     "CLIENT_PORT": 5320,
     "BS_IP": "10.0.0.100",
