@@ -80,6 +80,8 @@ class Station(Thread):
                     if ((time.time() - self.lastBK) >= self.conf['INTERVAL_BK']):
                         self.bkProcess()
         
+        res = sp.getstatusoutput("service network-manager start")
+        print("\t\t> Reactivando Network-Manager!.", res[0])
         print("\t\t> Deteniendo el servicio!.")
         print("\n----------------------------------------------------------------\n")
     
@@ -202,14 +204,11 @@ class Station(Thread):
             tmpVer = data['bkup_version']
             
             print("\tData Version Recibida: "+tmpVer)
-            s.close()
             
             if(tmpVer != self.hVer):
                 self.updateBk()
             else:
                 print("\tData Version Sin Cambios: "+tmpVer)
-            
-            self.lastBK = time.time()
             
         except Exception as e:
             print("\n\tBase Station Perdida.", e)
@@ -236,6 +235,9 @@ class Station(Thread):
                 self.state = 2
             else:
                 print("\n\tEsperando nueva Base Station.")
+        
+        s.close()
+        self.lastBK = time.time()
     
     def updateBk(self):
         
