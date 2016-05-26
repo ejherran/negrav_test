@@ -206,6 +206,7 @@ class MNode(Thread):
         
         self.gps = [float(self.conf['GPS'][0]), float(self.conf['GPS'][1]), float(self.conf['GPS'][2])]
         self.lps = self.gps[:]
+        
         self.calendario = None
         
         self.MN = []

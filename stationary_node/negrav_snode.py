@@ -11,6 +11,96 @@ import pool
 import subprocess as sp
 from threading import Thread
 
+class Calendario(Thread):
+    
+    def __init__(self, node):
+        
+        super().__init__()
+        
+        self.node = node
+        self.agend = []
+        self.isRun = True
+    
+    def run(self):
+        
+        while(self.isRun):
+            
+            ltime = time.time()
+            idx = -1
+            
+            for i in range(len(self.agend)):
+                if self.agend[i]['atime'] <= ltime:
+                    idx = i
+                    break
+            
+            if idx >= 0:
+                
+                if(self.agend[idx]['type'] == 'battery'):
+                    
+                    curbat = random.randint(0, 100)
+                    
+                    if (curbat >= self.agend[idx]['max'] or curbat <= self.agend[idx]['min']):
+                        
+                        r = {}
+                        r['protocol'] = 'NEGRAV'
+                        r['version'] = 'v1.0'
+                        r['cmd'] = 'alarm_report'
+                        r['node_ip'] = self.node.sIp
+                        r['sensor'] = self.agend[idx]['type']
+                        r['value'] = str(curbat)+"%"
+                        
+                        self.sendToStation(r)
+                    
+                    self.agend[idx]['atime'] = ltime+self.agend[idx]['period']
+                    
+                else:
+                    
+                    s2 = {}
+                    for s in self.node.conf['sensor']:
+                        if s['name'] == self.agend[idx]['type']:
+                            s2 = s
+                    
+                    minv = self.node.getNumPart(s2['range'][0])
+                    maxv = self.node.getNumPart(s2['range'][1])
+                    
+                    val = round(minv+((maxv-minv)*random.random()), 2)
+                    
+                    if (val >= self.agend[idx]['max'] or val <= self.agend[idx]['min']):
+                    
+                        r = {}
+                        r['protocol'] = 'NEGRAV'
+                        r['version'] = 'v1.0'
+                        r['cmd'] = 'alarm_report'
+                        r['node_ip'] = self.node.sIp
+                        r['sensor'] = self.agend[idx]['type']
+                        r['value'] = str(val)+s2['units'][0]
+                        
+                        self.sendToStation(r)
+                    
+                    self.agend[idx]['atime'] = ltime+self.agend[idx]['period']
+    
+    def sendToStation(self, r):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((self.node.conf['BS_IP'], self.node.conf['SERVER_PORT']))
+        s.sendall(json.dumps(r).encode('utf8'))
+        s.close()
+    
+    def getTaskInd(self, tipo):
+        
+        idx = -1
+        for i in range(len(self.agend)):
+            if(self.agend[i]['type'] == tipo):
+                idx = i
+                break
+        
+        return idx
+    
+    def addTask(self, task):
+        self.agend.append(task)
+    
+    def detener(self):
+        self.isRun = False
+
 class SNode(Thread):
     
     def __init__(self, nid, conf):
@@ -23,6 +113,8 @@ class SNode(Thread):
         self.conf = conf
         self.server = None
         self.sIP = None
+        
+        self.calendario = None
         
         self.SN = []
         self.SNM = []
@@ -134,6 +226,9 @@ class SNode(Thread):
         self.server.bind( (self.sIp, self.conf['CLIENT_PORT']) )
         self.server.listen(8)
         
+        self.calendario = Calendario(self)
+        self.calendario.start()
+        
         self.state = 4
     
     def addProcess(self):
@@ -212,6 +307,43 @@ class SNode(Thread):
                         
                         print("\tEnviando datos.")
                         conn.sendall(json.dumps(r).encode('utf8'))
+                    
+                    elif(data['cmd'] == 'node_configure'):
+                        
+                        print("\tSolicitud de configuración.")
+                        
+                        tipo = data['sensor'][0]['name']
+                        isSen = False
+                        for s in self.conf['sensor']:
+                            if tipo == s['name']:
+                                isSen = True
+                                break
+                        
+                        if isSen or (tipo == 'battery'):
+                        
+                            idx = self.calendario.getTaskInd(tipo)
+                            
+                            task = {}
+                            task['type'] = tipo
+                            task['max'] = float(data['sensor'][0]['alarms'][0])
+                            task['min'] = float(data['sensor'][0]['alarms'][1])
+                            task['period'] = float(data['sensor'][0]['period'])
+                            task['atime'] = time.time()+task['period']
+                            
+                            if(idx < 0):
+                            
+                                self.calendario.addTask(task)
+                                
+                                print("\t\tSolicitud agendada y ejecutandose.")
+                            
+                            else:
+                                
+                                self.calendario.agend[idx] = task
+                                
+                                print("\t\tSolictud actualizada.")
+                        
+                        else:
+                            print("\t\tSolictud rechazada. En nodo no cuenta con el sensor solicitado.")
                         
                 else:
                     print("\tERROR: Comando no definido en la solicitud!.")
@@ -280,8 +412,14 @@ class SNode(Thread):
             if self.server:
                 print("\t\t> Cerrando socket")
                 self.server.shutdown(socket.SHUT_RDWR)
+            
+            if self.calendario:
+                print("\t\t> Cerrando calendario")
+                self.calendario.detener()
+                
         except:
             pass
+
 
 
 def main(args):

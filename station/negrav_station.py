@@ -104,7 +104,7 @@ class Console(Thread):
                     td.sort()
                     
                     for w in td:
-                        print("\t\t\t\t"+w+": "+self.station.alarms[k][w][1]+" ("+self.station.alarms[k][w][0]+")")
+                        print("\t\t\t\t"+w+":\t"+self.station.alarms[k][w][1]+"\t\t("+self.station.alarms[k][w][0]+")")
                     
             
             elif(inp.lower().split(" ")[0] == 'desc'):
