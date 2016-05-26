@@ -35,8 +35,6 @@ class Calendario(Thread):
             
             if idx >= 0:
                 
-                print(self.agend[idx])
-                
                 if(self.agend[idx]['type'] == 'move'):
                     
                     r = {}
@@ -131,7 +129,7 @@ class Calendario(Thread):
                     curbat = random.randint(0, 100)
                     
                     if (curbat >= self.agend[idx]['max'] or curbat <= self.agend[idx]['min']):
-                    
+                        
                         r = {}
                         r['protocol'] = 'NEGRAV'
                         r['version'] = 'v1.0'
@@ -154,7 +152,7 @@ class Calendario(Thread):
                     minv = self.node.getNumPart(s2['range'][0])
                     maxv = self.node.getNumPart(s2['range'][1])
                     
-                    val = minv+((maxv-minv)*random.random())
+                    val = round(minv+((maxv-minv)*random.random()), 2)
                     
                     if (val >= self.agend[idx]['max'] or val <= self.agend[idx]['min']):
                     
