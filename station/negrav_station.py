@@ -91,6 +91,20 @@ class Console(Thread):
                     
                     for w in td:
                         print("\t\t\t\t"+w+": "+self.station.moves[k][w])
+            
+            elif(inp.lower() == 'show alarms'):
+                
+                tl = list(self.station.alarms.keys())
+                tl.sort()
+                
+                print("\t\t> ALARMAS RECIENTES DE LOS NODOS")
+                for k in tl:
+                    print("\n\t\t\t"+k+": ")
+                    td = list(self.station.alarms[k].keys())
+                    td.sort()
+                    
+                    for w in td:
+                        print("\t\t\t\t"+w+": "+self.station.alarms[k][w][1]+" ("+self.station.alarms[k][w][0]+")")
                     
             
             elif(inp.lower().split(" ")[0] == 'desc'):
@@ -265,6 +279,7 @@ class Station(Thread):
         self.lastBK = 0
         self.raiseBk = False
         self.moves = {}
+        self.alarms = {}
     
     def run(self):
         
@@ -646,6 +661,15 @@ class Station(Thread):
                             self.aMN[tag]['type'] = data['type']
                             self.aMN[tag]['GPS'] = data['GPS']
                             self.aMN[tag]['sensor'] = data['sensor']
+                    
+                    elif(data['cmd'] == 'alarm_report'):
+                        tag = self.getTag(data['node_ip'])
+                        self.log("Alarma Del Nodo ["+tag+":"+data['node_ip']+"]")
+                        
+                        if not(tag in list(self.alarms.keys())):
+                            self.alarms[tag] = {}
+                        
+                        self.alarms[tag][data['sensor']] = ("["+time.strftime("%Y-%m-%d %H:%M:%S")+"]", data['value']) 
                     
                     elif(data['cmd'] == 'move_update'):
                         tag = self.getTag(data['node_ip'])
