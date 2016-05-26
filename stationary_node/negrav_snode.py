@@ -101,6 +101,7 @@ class Calendario(Thread):
     def detener(self):
         self.isRun = False
 
+
 class SNode(Thread):
     
     def __init__(self, nid, conf):
@@ -419,7 +420,6 @@ class SNode(Thread):
                 
         except:
             pass
-
 
 
 def main(args):
